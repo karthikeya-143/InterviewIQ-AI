@@ -1,0 +1,13 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Backend runtime data
+backend/data/
+backend/temp_audio/
+
+# Node
+frontend/node_modules/
+frontend/dist/
