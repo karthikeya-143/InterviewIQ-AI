@@ -171,3 +171,7 @@ To run unit and integration tests verifying the pipeline logic:
 ```powershell
 python backend/test_app.py
 ```
+
+## Author
+
+B.karthikeya
