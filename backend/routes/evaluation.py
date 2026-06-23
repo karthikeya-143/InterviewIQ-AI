@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from utils.session_store import sessions_db
+from services.interview_service import save_evaluation, mark_skipped
 from ai_models.evaluator import AnswerEvaluator
 
 router = APIRouter(prefix="/interview", tags=["Evaluation"])
@@ -62,8 +63,7 @@ async def evaluate_answer(payload: EvaluateAnswerRequest):
         )
         
         # Save candidate answer and evaluation to session memory
-        session["answers"][question_id] = candidate_ans
-        session["evaluations"][question_id] = eval_result
+        save_evaluation(session_id, question_id, candidate_ans, eval_result)
         
         return EvaluateAnswerResponse(
             question_id=question_id,

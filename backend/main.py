@@ -1,4 +1,5 @@
 import uvicorn
+from utils.config import HOST, PORT
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,5 +50,13 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    # Run the FastAPI server locally on port 8000
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    import os
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(backend_dir)
+    uvicorn.run(
+        "main:app",
+        host=HOST,
+        port=PORT,
+        reload=True,
+        reload_dirs=[backend_dir],
+    )

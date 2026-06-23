@@ -15,6 +15,9 @@ try:
 except ImportError:
     SKLEARN_AVAILABLE = False
 
+from utils.config import SBERT_MODEL
+
+
 class AnswerEvaluator:
     """
     Evaluates candidate answers against reference answers.
@@ -22,7 +25,7 @@ class AnswerEvaluator:
     and generates detailed feedback (Strengths, Weaknesses, Suggestions).
     """
     def __init__(self):
-        self.model_name = "all-MiniLM-L6-v2"
+        self.model_name = SBERT_MODEL
         self.model = None
         self.initialized = False
 

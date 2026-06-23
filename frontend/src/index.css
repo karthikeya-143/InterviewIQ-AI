@@ -106,3 +106,78 @@
 .bar:nth-child(6) { animation-delay: 0.3s; }
 .bar:nth-child(7) { animation-delay: 0.5s; }
 .bar:nth-child(8) { animation-delay: 0.2s; }
+
+/* Author watermark — visible diagonal pattern + corner badge */
+.watermark-grid {
+  position: absolute;
+  inset: -20%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 2rem;
+  transform: rotate(-30deg);
+  opacity: 1;
+}
+
+.watermark-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(99, 102, 241, 0.14);
+  text-shadow: 0 0 20px rgba(99, 102, 241, 0.12);
+  user-select: none;
+}
+
+.watermark-badge {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(9, 13, 22, 0.75);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.watermark-badge-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.watermark-badge-name {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #818cf8;
+  text-shadow: 0 0 12px rgba(99, 102, 241, 0.45);
+}
+
+@media (max-width: 640px) {
+  .watermark-text {
+    font-size: 1.25rem;
+    letter-spacing: 0.06em;
+  }
+
+  .watermark-badge {
+    bottom: 0.75rem;
+    right: 0.75rem;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .watermark-badge-name {
+    font-size: 0.875rem;
+  }
+}
