@@ -7,15 +7,12 @@ try:
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
-from utils.config import GENERATOR_MODEL
-
-
 class QuestionGenerator:
     """
     Generates tailored technical, project-based, and HR questions based on the candidate's resume content.
     """
     def __init__(self):
-        self.model_name = GENERATOR_MODEL
+        self.model_name = "google/flan-t5-small"
         self.generator = None
         self.initialized_model = False
         
@@ -118,9 +115,12 @@ class QuestionGenerator:
         """
         if not self.initialized_model and TRANSFORMERS_AVAILABLE:
             try:
-                from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-                self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
+                # Use Seq2Seq pipeline with flan-t5-small
+                self.generator = pipeline(
+                    "text2text-generation",
+                    model=self.model_name,
+                    device=-1  # force CPU
+                )
                 self.initialized_model = True
             except Exception as e:
                 print(f"Warning: Failed to load local question generator model: {e}. Falling back to rule-based engine.")
@@ -138,8 +138,6 @@ class QuestionGenerator:
         skills = resume_data.get("skills", [])
         projects = resume_data.get("projects", [])
         technologies = resume_data.get("technologies", [])
-        education = resume_data.get("education", [])
-        certifications = resume_data.get("certifications", [])
         
         # Combine skills and technologies for technical questions
         all_tech = list(set([s.lower() for s in skills] + [t.lower() for t in technologies]))
@@ -201,32 +199,20 @@ class QuestionGenerator:
                 "Describe a project architecture you designed recently and why you made those decisions."
             ]
 
-        # 3. HR Questions (Goal: 2) — tailor using education/certifications when available
-        hr_pool = list(self.hr_questions)
-        if education:
-            edu_label = education[0]
-            hr_pool.append(
-                f"Given your background in {edu_label}, how has your academic training prepared you for technical interviews?"
-            )
-        if certifications:
-            cert_label = certifications[0]
-            hr_pool.append(
-                f"You hold the {cert_label} certification. How did you prepare for it and what did you learn?"
-            )
-        hr_questions = random.sample(hr_pool, min(2, len(hr_pool)))
+        # 3. HR Questions (Goal: 2)
+        hr_questions = random.sample(self.hr_questions, 2)
         
         # Combine all to 10 questions
         questions = tech_questions[:5] + proj_questions[:3] + hr_questions[:2]
         
         # If we have the transformer model loaded, we can use it to rephrase or add a unique twist to a few questions
-        if hasattr(self, 'model') and self.model and hasattr(self, 'tokenizer') and self.tokenizer:
+        if self.generator:
             try:
                 # Rephrase one question to demonstrate deep learning generation
                 idx_to_rephrase = 0
                 prompt = f"Rewrite this interview question to be more professional: {questions[idx_to_rephrase]}"
-                inputs = self.tokenizer(prompt, return_tensors="pt")
-                outputs = self.model.generate(**inputs, max_length=50)
-                new_q = self.tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+                res = self.generator(prompt, max_length=50, num_return_sequences=1)
+                new_q = res[0]['generated_text'].strip()
                 # Ensure it ended up as a proper question and is not empty
                 if new_q and new_q.endswith('?') and len(new_q) > 15:
                     questions[idx_to_rephrase] = new_q

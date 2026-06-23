@@ -12,16 +12,13 @@ try:
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
-from utils.config import WHISPER_MODEL
-
-
 class WhisperService:
     """
     Service for transcribing candidate speech to text using Whisper.
     Uses openai/whisper-tiny for lightweight and fast local CPU inference.
     """
     def __init__(self):
-        self.model_name = WHISPER_MODEL
+        self.model_name = "openai/whisper-tiny"
         self.pipe = None
         self.initialized = False
         
@@ -85,31 +82,35 @@ class WhisperService:
                 print(f"Warning: Could not load Whisper model: {e}. Falling back to mock audio transcriber.")
                 self.initialized = True # Prevent continuous retries
 
-    def transcribe(self, audio_file_path: str, question_text: str = None) -> dict:
+    def transcribe(self, audio_file_path: str, question_text: str = None) -> str:
         """
         Transcribes the given audio file path.
-        Returns transcript text and whether a fallback was used.
+        If Whisper fails or is unavailable, uses the fallback transcript map.
         """
         self._lazy_init_model()
         
+        # Verify file exists
         if not os.path.exists(audio_file_path):
             raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
 
+        # Attempt to run Whisper if available and initialized
         if self.pipe:
             try:
+                # Load audio using librosa to ensure correct sample rate (16000Hz) and mono channel
+                # This bypasses potential ffmpeg errors for WAV files
                 audio_data, sr = librosa.load(audio_file_path, sr=16000, mono=True)
+                
+                # Run transcription
                 result = self.pipe(audio_data)
                 transcript = result.get("text", "").strip()
                 
                 if transcript:
-                    return {"transcript": transcript, "used_fallback": False}
+                    return transcript
             except Exception as e:
                 print(f"Whisper inference error: {e}. Attempting fallback...")
 
-        return {
-            "transcript": self._get_fallback_transcript(question_text),
-            "used_fallback": True,
-        }
+        # Fallback transcription
+        return self._get_fallback_transcript(question_text)
 
     def _get_fallback_transcript(self, question_text: str) -> str:
         """

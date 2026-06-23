@@ -6,9 +6,6 @@ try:
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
-from utils.config import GENERATOR_MODEL
-
-
 class ReferenceAnswerGenerator:
     """
     Generates reference answers for interview questions.
@@ -16,7 +13,7 @@ class ReferenceAnswerGenerator:
     with a Seq2Seq transformer fallback for custom questions.
     """
     def __init__(self):
-        self.model_name = GENERATOR_MODEL
+        self.model_name = "google/flan-t5-small"
         self.generator = None
         self.initialized_model = False
         
@@ -83,9 +80,11 @@ class ReferenceAnswerGenerator:
     def _lazy_init_model(self):
         if not self.initialized_model and TRANSFORMERS_AVAILABLE:
             try:
-                from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-                self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
+                self.generator = pipeline(
+                    "text2text-generation",
+                    model=self.model_name,
+                    device=-1  # CPU
+                )
                 self.initialized_model = True
             except Exception as e:
                 print(f"Warning: Failed to load local reference answer generator model: {e}")
@@ -126,12 +125,11 @@ class ReferenceAnswerGenerator:
             return "Overfitting happens when a machine learning model learns the details and noise of the training data too well, failing to generalize to new data. It can be prevented using techniques like dropout (random node deactivation), L1/L2 weight regularization, data augmentation, early stopping, and training on more diverse datasets."
 
         # 4. Generate dynamic answer using transformers Seq2Seq model
-        if hasattr(self, 'model') and self.model and hasattr(self, 'tokenizer') and self.tokenizer:
+        if self.generator:
             try:
                 prompt = f"Provide a brief 2-3 sentence technical answer to: {question}"
-                inputs = self.tokenizer(prompt, return_tensors="pt")
-                outputs = self.model.generate(**inputs, max_length=150)
-                ans = self.tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+                res = self.generator(prompt, max_length=150, min_length=30, num_return_sequences=1)
+                ans = res[0]['generated_text'].strip()
                 if len(ans) > 20:
                     return ans
             except Exception as e:
